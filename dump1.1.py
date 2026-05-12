@@ -78,4 +78,513 @@ def login_tkkn():
             print(f"\n {c}INVALID TOKEN FORMAT...");time.sleep(3);login_menu()
         else:
             open(".MrSxR_TkN.txt", "w").write(token);sxr_main()
-    except Exception as e:print(f"Error : {e}...");time.sleep(3);login_menu
+    except Exception as e:print(f"Error : {e}...");time.sleep(3);login_menu()
+Additionally, here are some other improvements to help with the "expired token" issues:
+
+Fix the login response handling - The token might be nested differently in the response:
+
+python
+# In login_id_ps() function, after the first request:
+if "access_token" in sxr_respns:
+    token = sxr_respns["access_token"]
+    # Add token validation
+    if token and len(token) > 20:
+        print(f"\n{b} [{c}●{b}] TOKEN {ekl} " + token)
+        open(".MrSxR_TkN.txt","w").write(token)
+        input("\n LOGIN DONE PRESS ENTER");sxr_main()
+    else:
+        print(f"\n {c}INVALID TOKEN RECEIVED...");time.sleep(3);login_menu()
+Add better error handling for expired tokens in the status checker:
+
+python
+#▬▭▬▭▬▭▬▭[ STATUS CHECKER ]▬▭▬▭▬▭▬▭#
+def ck_sttus():
+    try:
+        token = open(".MrSxR_TkN.txt", "r").read()
+        if not token:
+            return f"{a}None"
+        
+        # Validate token format
+        if not (token.startswith("EAA") or token.startswith("EAAB")):
+            return f"{c}Invalid Token Format"
+            
+        uid = "61565919664817"
+        _data = {
+            "User-Agent": ua,
+            "client_doc_id": "42003896889828048564952729208",
+            "method": "post",
+            "locale": "en_US",
+            "pretty": "false",
+            "format": "json",
+            "variables": "{\"profile_id\":"+ uid +",\"suggestion_friends_paginating_first\":2500}",
+            "fb_api_req_friendly_name": "SuggestionsFriendListContentQuery",
+            "fb_api_caller_class": "graphservice",
+            "fb_api_analytics_tags": "[\"At_Connection\",\"GraphServices\"]",
+            "client_trace_id": f"{trc_id}",
+            "server_timestamps": "true",
+            "purpose": "fetch"
+        }
+        _header = {
+            "X-Graphql-Client-Library": "graphservice",
+            "X-Graphql-Request-Purpose": "fetch",
+            "X-Fb-Privacy-Context": "2368177546817046",
+            "X-Fb-Background-State": "1",
+            "X-Fb-Net-Hni": sm_hni,
+            "X-Fb-Sim-Hni": sm_hni,
+            "Authorization": f"OAuth {token}",
+            "X-Fb-Session-Id": "nid=DQGq3fmNKvVh;tid=135;nc=1;fc=1;bc=0;cid=ef0e330bff1cd312f36aa5f2c69c59a9",
+            "X-Fb-Connection-Type": "MOBILE.LTE",
+            "X-Fb-Device-Group": "3941",
+            "X-Tigon-Is-Retry": "False",
+            "X-Fb-Rmd": "cached=0;state=URL_ELIGIBLE",
+            "X-Fb-Ta-Logging-Ids": f"graphql:{trc_id}",
+            "X-Fb-Friendly-Name": "SuggestionsFriendListContentQuery",
+            "X-Fb-Request-Analytics-Tags": "graphservice",
+            "Priority": "u=0",
+            "Accept-Encoding": "gzip, deflate",
+            "X-Fb-Http-Engine": "Liger",
+            "X-Fb-Client-Ip": "True",
+            "X-Fb-Server-Cluster": "True",
+            "X-Fb-Connection-Token": "ef0e330bff1cd312f36aa5f2c69c59a9",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": "567"
+        }
+        url = "https://graph.facebook.com/graphql"
+        sxrresps = requests.post(url, headers=_header, data=_data).json()
+        
+        # Check for error responses
+        if "error" in sxrresps:
+            error_msg = sxrresps.get("error", {}).get("message", "")
+            if "expired" in error_msg.lower() or "invalid" in error_msg.lower():
+                return f"{c}Expire"
+            return f"{c}Error: {error_msg[:20]}..."
+        
+        try:
+            respx = sxrresps["data"]["user"]["friends"]["edges"]
+            if len(respx) < 10:
+                return f"{c}Expire"
+            else:
+                return f"{b}Active"
+        except:
+            return f"{c}Expire"
+    except FileNotFoundError:
+        return f"{a}None"
+    except Exception as e:
+        return f"{c}Error: {str(e)[:20]}..."
+#▬▭▬▭▬▭▬▭[ LOGO ]▬▭▬▭▬▭▬▭#
+def clr_logo(stts=True):
+    global status
+    if stts:status = ck_sttus()
+    os.system("clear")
+    print(f"""{b}
+      .d8888.  db    db  d8888b. 
+      88'  YP  `8b  d8'  88  `8D 
+      `8bo.     `8bd8'   88oobY' 
+        `Y8b.   .dPYb.   88`8b   
+      db   8D  .8P  Y8.  88 `88. 
+      `8888Y'  YP    YP  88   YD   {j}FILE
+{sxrline}
+ {b}[{c}●{b}] DEVELOPER    {f}:{b} Mr.SxR
+ {b}[{c}●{b}] FACEBOOK     {f}:{b} Masudur Rahman Sifat
+ {b}[{c}●{b}] GITHUB       {f}:{b} github.com/Mr-SxR
+ {b}[{c}●{b}] TOOL         {f}:{b} FILE MAKE
+{sxrline}
+           {b}--●([{status}{b})]●--
+{sxrline}""")
+#▬▭▬▭▬▭▬▭[ MAIN MENU DEF ]▬▭▬▭▬▭▬▭#
+def sxr_main():
+    clr_logo(stts=True)
+    if "Active" in status:
+        print(f" {l1} MAKE DUMP FILE\n {l2} DUPLICATE REMOVE\n {l3} REMOVE STYLIST NAME IDS\n {l4} REMOVE ID IN USE\n {l5} SEPARATE IDS\n {l6} SEPARATE SPECIFIC NAMES\n {l7} DIVIDE LARGE FILE\n {l8} REMOVE TOKEN\n {l0} EXIT\n{sxrline}")
+        choice1 = input(f"{b} [{c}●{b}] CHOOSE OPTION {ekl} ")
+        if choice1 in ["1","01","A","a"]:creat_mnu()
+        elif choice1 in ["2","02","B","b"]:duplicte_rmv()
+        elif choice1 in ["3","03","C","c"]:stylist_rmv()
+        elif choice1 in ["4","04","D","d"]:line_rmv()
+        elif choice1 in ["5","05","E","e"]:saprt_ids()
+        elif choice1 in ["6","06","F","f"]:saprt_nam()
+        elif choice1 in ["7","07","G","g"]:divider()
+        elif choice1 in ["8","08","H","h"]:ckki_rmv()
+        elif choice1 in ["0","00","O","o"]:exit()
+        else:print(f"\n{c} You have selected the wrong option..");time.sleep(2);sxr_main()
+    else:
+        print(f" {l1} LOGIN\n {l2} DUPLICATE REMOVE\n {l3} REMOVE STYLIST NAME IDS\n {l4} REMOVE ID IN USE\n {l5} SEPARATE IDS\n {l6} SEPARATE SPECIFIC NAMES\n {l7} DIVIDE LARGE FILE\n {l8} REMOVE TOKEN\n {l0} EXIT\n{sxrline}")
+        choice2 = input(f"{b} [{c}●{b}] CHOOSE OPTION {ekl} ")
+        if choice2 in ["1","01","A","a"]:login_menu()
+        elif choice2 in ["2","02","B","b"]:duplicte_rmv()
+        elif choice2 in ["3","03","C","c"]:stylist_rmv()
+        elif choice2 in ["4","04","D","d"]:line_rmv()
+        elif choice2 in ["5","05","E","e"]:saprt_ids()
+        elif choice2 in ["6","06","F","f"]:saprt_nam()
+        elif choice2 in ["7","07","G","g"]:divider()
+        elif choice2 in ["8","08","H","h"]:ckki_rmv()
+        elif choice2 in ["0","00","O","o"]:exit()
+        else:print(f"\n{c} You have selected the wrong option..");time.sleep(2);sxr_main()
+#▬▭▬▭▬▭▬▭[ CREATE MENU DEF ]▬▭▬▭▬▭▬▭#
+def creat_mnu():
+    clr_logo(stts=False)
+    print(f" {l1} CREATE SIMPLE FILE\n {l2} MAKE UNLIMITED IDS FILE\n {l3} DUMP FOLLOWER (COMING)\n {l0} BACK MENU\n{sxrline}")
+    choicex = input(f"{b} [{c}●{b}] CHOOSE OPTION {ekl} ")
+    if choicex in ["1","01","A","a"]:smpl_fbmkr()
+    elif choicex in ["2","02","B","b"]:unlimd_flmkr()
+    elif choicex in ["3","03","C","c"]:exit("\n This feature is coming soon")
+    elif choicex in ["0","00","O","o"]:sxr_main()
+    else:print(f"\n{c} You have selected the wrong option..");time.sleep(2);creat_mnu()
+#▬▭▬▭▬▭▬▭[ LOGIN MENU DEF ]▬▭▬▭▬▭▬▭#
+def login_menu():
+    try:os.remove(".MrSxR_TkN.txt")
+    except:pass
+    clr_logo(stts=True)
+    print(f" {l1} LOGIN WITH EMAIL/UID - PASSWORD\n {l2} LOGIN WITH COOKIE\n {l3} LOGIN WITH TOKEN\n {l0} BACK MENU\n{sxrline}")
+    choice3 = input(f"{b} [{c}●{b}] CHOOSE OPTION {ekl} ")
+    if choice3 in ["1","01","A","a"]:login_id_ps()
+    elif choice3 in ["2","02","B","b"]:login_coki()
+    elif choice3 in ["3","03","C","c"]:login_tkkn()
+    elif choice3 in ["0","00","O","o"]:sxr_main()
+    else:print(f"\n{c} You have selected the wrong option..");time.sleep(2);login_menu()
+#▬▭▬▭▬▭▬▭[ LOGIN UID/PASS ]▬▭▬▭▬▭▬▭#
+def login_id_ps():
+    try:
+        ids = input(f"{b} [{c}●{b}] UID/EMAIL {ekl} ")
+        pww = input(f"{b} [{c}●{b}] PASSWORD {ekl} ")
+        _data = {"access_token": "256002347743983|374e60f8b9bb6b8cbb30f78030438895","sdk_version": str(random.randint(1,26)),"email": ids,"password": pww,"sdk": "android","locale": "en_US","generate_session_cookies": "1","sig": "c1e620fa708a1d5696fb991c1bde5662"}
+        _header = {"Host": "graph.facebook.com","x-fb-connection-bandwidth": bnd_wh,"x-fb-sim-hni": sm_hni,"x-fb-net-hni": sm_hni,"x-fb-connection-quality": "EXCELLENT","user-agent": ua,"content-type": "application/x-www-form-urlencoded","x-fb-http-engine": "Liger"}
+        url = "https:/"+"/gr"+"a"+"p"+"h.facebook.com/auth/login"
+        sxr_respns = requests.post(url,data=_data,headers=_header,allow_redirects=False).json()
+        if "access_token" in sxr_respns:
+            token = sxr_respns["access_token"]
+            print(f"\n{b} [{c}●{b}] TOKEN {ekl} " + token)
+            open(".MrSxR_TkN.txt","w").write(token)
+            input("\n LOGIN DONE PRESS ENTER");sxr_main()
+        elif "www.facebook.com" in sxr_respns["error"]["message"]:exit(f"\n {c}ACCOUNT IS IN CHECKPOINT");time.sleep(3);login_menu()
+        else:
+            _data = {"email":ids, "password":pww, "adid":str(uuid.uuid4()), "device_id":str(uuid.uuid4()), "family_device_id":str(uuid.uuid4()), "session_id":str(uuid.uuid4()), "advertiser_id":str(uuid.uuid4()), "reg_instance":str(uuid.uuid4()), "logged_out_id":str(uuid.uuid4()), "locale":"en_US", "client_country_code":"US", "cpl":"true", "source":"login", "format":"json", "omit_response_on_success":"false", "credentials_type":"password", "error_detail_type":"button_with_disabled", "generate_session_cookies":"1", "generate_analytics_claim":"1", "generate_machine_id":"1", "tier":"regular", "currently_logged_in_userid":"0", "fb_api_req_friendly_name":"authenticate", "fb_api_caller_class":"com.facebook.account.login.protocol.Fb4aAuthHandler", "fb4a_shared_phone_cpl_experiment":"fb4a_shared_phone_nonce_cpl_at_risk_v3", "fb4a_shared_phone_cpl_group":"enable_v3_at_risk", "access_token":"350685531728%7C62f8ce9f74b12f84c123cc23437a4a32", "api_key":"882a8490361da98702bf97a021ddc14d", "sig":"62f8ce9f74b12f84c123cc23437a4a32"}
+            _header = {"Host":"graph.facebook.com", "User-Agent":ua, "Accept-Encoding":"gzip, deflate", "Accept":"*/*", "Connection":"keep-alive", "Authorization":"OAuth 350685531728|62f8ce9f74b12f84c123cc23437a4a32", "X-FB-SIM-HNI":sm_hni, "X-FB-Net-HNI":sm_hni, "X-FB-Connection-Bandwidth":bnd_wh, "X-FB-Connection-Quality":"EXCELLENT", "X-FB-Connection-Type":"MOBILE.LTE", "X-FB-HTTP-Engine":"Liger", "X-FB-Client-IP":"True", "X-FB-Friendly-Name":"authenticate", "Content-Type":"application/x-www-form-urlencoded", "Content-Length":"1026"}
+            url = "https:/"+"/b-"+"g"+"ra"+"ph.facebook.com/auth/login"
+            sxr_respns = requests.post(url,data=_data,headers=_header,allow_redirects=False).json()
+            if "access_token" in sxr_respns:
+                token = sxr_respns["access_token"]
+                print(f"\n{b} [{c}●{b}] TOKEN {ekl} " + token)
+                open(".MrSxR_TkN.txt","w").write(token)
+                input("\n LOGIN DONE PRESS ENTER");sxr_main()
+            else:print(f"\n {c}WORNG ID PASSWORD...");time.sleep(3);login_menu()
+    except Exception as e:print(f"Error : {e}");time.sleep(3);login_menu()
+#▬▭▬▭▬▭▬▭[ LOGIN COOKIE ]▬▭▬▭▬▭▬▭#
+def login_coki():
+    try:
+        cokki = input(f"{b} [{c}●{b}] COOKIE {ekl} ")
+        session = requests.session()
+        _data = {"access_token": "1348564698517390|007c0a9101b9e1c8ffab727666805038", "scope": ""}
+        reqstx1 = session.post("https://graph.facebook.com/v16.0/device/login/", data=_data).json()
+        code = reqstx1["code"];user_code = reqstx1["user_code"]
+        cookie = {"Cookie": cokki}
+        reqstx2 = bs(session.get("https://m.facebook.com/device", cookies=cookie).content, "html.parser")
+        jazo_ = reqstx2.find("form", {"method": "post"})
+        _data2 = {"jazoest": re.search('name="jazoest" type="hidden" value="(.*?)"', str(jazo_)).group(1), "fb_dtsg": re.search(r'name="fb_dtsg" type="hidden" value="([^"]+)"', str(reqstx2)).group(1), "qr": "0", "user_code": user_code}
+        url1 = "https://m.facebook.com" + jazo_["action"]
+        postx = bs(session.post(url1, data=_data2, cookies=cookie).content, "html.parser")
+        _dataf = {}
+        reqjazo_ = postx.find("form", {"method": "post"})
+        for x in reqjazo_("input", {"value": True}):
+            try:
+                if x["name"] == "__CANCEL__":pass
+                else:_dataf.update({x["name"]: x["value"]})
+            except Exception as e:pass
+        url2 = "https://m.facebook.com" + reqjazo_["action"]
+        url = f"https://graph.facebook.com/v16.0/device/login_status?method=post&code={code}&access_token=1348564698517390|007c0a9101b9e1c8ffab727666805038"
+        postx2 = bs(session.post(url2, data=_dataf, cookies=cookie).content, 'html.parser')
+        sxrresp = session.get(url, cookies=cookie).json()
+        if "access_token" in sxrresp:
+            token = sxrresp["access_token"]
+            print(f"\n{b} [{c}●{b}] TOKEN {ekl} "+token)
+            open(".MrSxR_TkN.txt", "w").write(token)
+            input("\n LOGIN DONE PLEASE ENTER");sxr_main()
+        else:print(f"\n {c}INVALID COOKIE FORMAT...");time.sleep(3);login_menu()
+    except Exception as e:print(f"Error : {e}");time.sleep(3);login_menu()
+#▬▭▬▭▬▭▬▭[ LOGIN INSTA ADDED COOKIE ]▬▭▬▭▬▭▬▭#
+def fuxk():
+    try:
+        cokki = input(f"{b} [{c}●{b}] COOKIE {ekl} ")
+        session = requests.session()
+        session.headers.update({'Accept-Language': 'id,en;q=0.9','User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36','Referer': 'https://www.instagram.com/','Host': 'www.facebook.com','Sec-Fetch-Mode': 'cors','Accept': '*/*','Connection': 'keep-alive','Sec-Fetch-Site': 'cross-site','Sec-Fetch-Dest': 'empty','Origin': 'https://www.instagram.com','Accept-Encoding': 'gzip, deflate',})
+        response = session.get('https://www.facebook.com/x/oauth/status?client_id=124024574287414&wants_cookie_data=true&origin=1&input_token=&sdk=joey&redirect_uri=https://www.instagram.com/brutalid_/', cookies={'cookie':cokki})
+        if '"access_token":' in str(response.headers):
+            token = re.search('"access_token":"(.*?)"', str(response.headers)).group(1)
+            print(f"\n{b} [{c}●{b}] TOKEN {ekl} "+token)
+            open(".MrSxR_TkN.txt", "w").write(token)
+            input("\n LOGIN DONE PLEASE ENTER");sxr_main()
+        else:print(f"\n {c}INVALID COOKIE FORMAT...");time.sleep(3);login_menu()
+    except Exception as e:print(f"Error : {e}");time.sleep(3);login_menu()
+#▬▭▬▭▬▭▬▭[ LOGIN TOKEN ]▬▭▬▭▬▭▬▭#
+#▬▭▬▭▬▭▬▭[ LOGIN TOKEN ]▬▭▬▭▬▭▬▭#
+def login_tkkn():
+    try:
+        token = input(f"{b} [{c}●{b}] TOKEN {ekl} ")
+        if token.startswith("EAA") or token.startswith("EAAB"):
+            open(".MrSxR_TkN.txt", "w").write(token)
+            sxr_main()
+        else:
+            print(f"\n {c}INVALID TOKEN FORMAT...")
+            time.sleep(3)
+            login_menu()
+    except Exception as e:
+        print(f"Error : {e}...")
+        time.sleep(3)
+        login_menu()
+#▬▭▬▭▬▭▬▭[ SIMPLE FILE MAKER ]▬▭▬▭▬▭▬▭#
+def smpl_fbmkr():
+    clr_logo(stts=False)
+    token = open(".MrSxR_TkN.txt", "r").read()
+    sv_dpfl = input(f"{b} [{c}●{b}] ENTER FILE NAME {ekl} ")
+    if not (sv_dpfl == "/sdcard/" or sv_dpfl == "/sdcard" or sv_dpfl == "/storage/emulated/0/" or sv_dpfl == "/storage/emulated/0"):
+        os.system(f"rm -rf {sv_dpfl}")
+    print(f"{b} [{c}●{b}] PAST ALL UID⬎\n{sxrline}{a}")
+    while True:
+        ids_all = input()
+        if ids_all == "":
+            if id_alx:break
+            else:continue
+        try:id_alx.append(ids_all.split("|")[0])
+        except:id_alx.append(ids_all)
+    with threadpol(max_workers=30) as sifatx:
+        clr_logo(stts=True)
+        total = len(id_alx)
+        for uid in id_alx:
+            sifatx.submit(simpl_lop,uid,token,sv_dpfl,total)
+    time.sleep(2);exit(f"\r\n{sxrline}\n {f}•{a}SUCESSFULLY DONE ALL IDS, FILE SAVE AS {ekl} {b}{sv_dpfl}")
+def simpl_lop(uid,token,sv_dpfl,total):
+    try:
+        _data = {"User-Agent": ua,"client_doc_id": "42003896889828048564952729208","method": "post","locale": "en_US","pretty": "false","format": "json","variables": "{\"profile_id\":"+ uid +",\"suggestion_friends_paginating_first\":2500}","fb_api_req_friendly_name": "SuggestionsFriendListContentQuery","fb_api_caller_class": "graphservice","fb_api_analytics_tags": "[\"At_Connection\",\"GraphServices\"]","client_trace_id": f"{trc_id}","server_timestamps": "true","purpose": "fetch"}
+        _header = {"X-Graphql-Client-Library": "graphservice","X-Graphql-Request-Purpose": "fetch","X-Fb-Privacy-Context": "2368177546817046","X-Fb-Background-State": "1","X-Fb-Net-Hni": sm_hni,"X-Fb-Sim-Hni": sm_hni,"Authorization": f"OAuth {token}","X-Fb-Session-Id": "nid=DQGq3fmNKvVh;tid=135;nc=1;fc=1;bc=0;cid=ef0e330bff1cd312f36aa5f2c69c59a9","X-Fb-Connection-Type": "MOBILE.LTE","X-Fb-Device-Group": "3941","X-Tigon-Is-Retry": "False","X-Fb-Rmd": "cached=0;state=URL_ELIGIBLE","X-Fb-Ta-Logging-Ids": f"graphql:{trc_id}","X-Fb-Friendly-Name": "SuggestionsFriendListContentQuery","X-Fb-Request-Analytics-Tags": "graphservice","Priority": "u=0","Accept-Encoding": "gzip, deflate","X-Fb-Http-Engine": "Liger","X-Fb-Client-Ip": "True","X-Fb-Server-Cluster": "True","X-Fb-Connection-Token": "ef0e330bff1cd312f36aa5f2c69c59a9","Content-Type": "application/x-www-form-urlencoded","Content-Length": "567"}
+        url = "https://graph.facebook.com/graphql"
+        sxrresps = requests.post(url, headers=_header, data=_data).json()
+        try:respx = sxrresps["data"]["user"]["friends"]["edges"]
+        except:pass
+        for xdge in respx:
+            try:ndex = xdge["node"]
+            except:pass
+            open(sv_dpfl, "a", encoding="utf-8").write(ndex["id"] + "|" + ndex["name"] + "\n")
+        try:totl_act=len(open(sv_dpfl,"r").readlines())
+        except:totl_act="?"
+        clor = random.choice(colors)
+        print(f"\r {clor}SUCESSFULLY EXTRACTED {uid}")
+        extrt.append(uid)
+        sys.stdout.write(f"\r {a}[{b}Mr.SxR{a}] ~ [{f}{total} {b}●{a} {str(len(extrt))}{a}] ~ [{f}{totl_act}{a}]");sys.stdout.flush()
+    except KeyError:pass
+    except requests.exceptions.ConnectionError:time.sleep(6)
+#▬▭▬▭▬▭▬▭[ UNLIMITED FILE MAKER ]▬▭▬▭▬▭▬▭#
+def unlimd_flmkr():
+    clr_logo(stts=False)
+    try:os.remove(".MrSxR_UNLiMTD.txt")
+    except:pass
+    token = open(".MrSxR_TkN.txt", "r").read()
+    sv_dpfl = input(f"{b} [{c}●{b}] ENTER FILE NAME {ekl} ")
+    if not (sv_dpfl == "/sdcard/" or sv_dpfl == "/sdcard" or sv_dpfl == "/storage/emulated/0/" or sv_dpfl == "/storage/emulated/0"):
+        os.system(f"rm -rf {sv_dpfl}")
+    clr_logo(stts=True)
+    try:
+        uid_lmit = int(input(f"{b} [{c}●{b}] HOW MANY IDS YOU WANT TO ADD {ekl} "))
+        if uid_lmit < 1 or uid_lmit > 20:print(f"\n {c}IDS MUST BE BETWEEN 1 - 20...");time.sleep(3);unlimd_flmkr()
+    except Exception as e:print(f"Error : {e}...");time.sleep(3);unlimd_flmkr()
+    for i in range(uid_lmit):
+        while True:
+            uid = input(f"{b} [{c}●{b}]{a} PUT ID {i+1} {ekl}{b} ")
+            try:
+                _data = {"User-Agent": ua,"client_doc_id": "42003896889828048564952729208","method": "post","locale": "en_US","pretty": "false","format": "json","variables": "{\"profile_id\":"+ uid +",\"suggestion_friends_paginating_first\":2500}","fb_api_req_friendly_name": "SuggestionsFriendListContentQuery","fb_api_caller_class": "graphservice","fb_api_analytics_tags": "[\"At_Connection\",\"GraphServices\"]","client_trace_id": f"{trc_id}","server_timestamps": "true","purpose": "fetch"}
+                _header = {"X-Graphql-Client-Library": "graphservice","X-Graphql-Request-Purpose": "fetch","X-Fb-Privacy-Context": "2368177546817046","X-Fb-Background-State": "1","X-Fb-Net-Hni": sm_hni,"X-Fb-Sim-Hni": sm_hni,"Authorization": f"OAuth {token}","X-Fb-Session-Id": "nid=DQGq3fmNKvVh;tid=135;nc=1;fc=1;bc=0;cid=ef0e330bff1cd312f36aa5f2c69c59a9","X-Fb-Connection-Type": "MOBILE.LTE","X-Fb-Device-Group": "3941","X-Tigon-Is-Retry": "False","X-Fb-Rmd": "cached=0;state=URL_ELIGIBLE","X-Fb-Ta-Logging-Ids": f"graphql:{trc_id}","X-Fb-Friendly-Name": "SuggestionsFriendListContentQuery","X-Fb-Request-Analytics-Tags": "graphservice","Priority": "u=0","Accept-Encoding": "gzip, deflate","X-Fb-Http-Engine": "Liger","X-Fb-Client-Ip": "True","X-Fb-Server-Cluster": "True","X-Fb-Connection-Token": "ef0e330bff1cd312f36aa5f2c69c59a9","Content-Type": "application/x-www-form-urlencoded","Content-Length": "567"}
+                url = "https://graph.facebook.com/graphql"
+                sxrresps = requests.post(url, headers=_header, data=_data).json()
+                try:respx = sxrresps["data"]["user"]["friends"]["edges"]
+                except:print(f"{f}• {a}FRIEND LIST PRIVATE");continue
+                if len(respx) < 10:print(f"{f}• {a}FRIEND LIST PRIVATE");continue
+                else:
+                    for xdge in respx:
+                        try:ndex = xdge["node"]
+                        except:pass
+                        open(".MrSxR_UNLiMTD.txt", "a", encoding="utf-8").write(ndex["id"] + "\n")
+                    print(f"{f}• {a}DONE {i+1}");break
+            except KeyError:print(f"{f}• {a}FRIEND LIST PRIVATE");continue
+            except requests.exceptions.ConnectionError:time.sleep(6)
+    try:total = open(".MrSxR_UNLiMTD.txt", "r").read().splitlines()
+    except:total = []
+    with threadpol(max_workers=30) as sifatx:
+        clr_logo(stts=True)
+        for uid in total:
+            sifatx.submit(unlkmedfl_lop,uid,token,sv_dpfl,total)
+    time.sleep(2);exit(f"\r\n{sxrline}\n {f}•{a}SUCESSFULLY DONE ALL IDS, FILE SAVE AS {ekl} {b}{sv_dpfl}")
+def unlkmedfl_lop(uid,token,sv_dpfl,total):
+    try:
+        _data = {"User-Agent": ua,"client_doc_id": "42003896889828048564952729208","method": "post","locale": "en_US","pretty": "false","format": "json","variables": "{\"profile_id\":"+ uid +",\"suggestion_friends_paginating_first\":2500}","fb_api_req_friendly_name": "SuggestionsFriendListContentQuery","fb_api_caller_class": "graphservice","fb_api_analytics_tags": "[\"At_Connection\",\"GraphServices\"]","client_trace_id": f"{trc_id}","server_timestamps": "true","purpose": "fetch"}
+        _header = {"X-Graphql-Client-Library": "graphservice","X-Graphql-Request-Purpose": "fetch","X-Fb-Privacy-Context": "2368177546817046","X-Fb-Background-State": "1","X-Fb-Net-Hni": sm_hni,"X-Fb-Sim-Hni": sm_hni,"Authorization": f"OAuth {token}","X-Fb-Session-Id": "nid=DQGq3fmNKvVh;tid=135;nc=1;fc=1;bc=0;cid=ef0e330bff1cd312f36aa5f2c69c59a9","X-Fb-Connection-Type": "MOBILE.LTE","X-Fb-Device-Group": "3941","X-Tigon-Is-Retry": "False","X-Fb-Rmd": "cached=0;state=URL_ELIGIBLE","X-Fb-Ta-Logging-Ids": f"graphql:{trc_id}","X-Fb-Friendly-Name": "SuggestionsFriendListContentQuery","X-Fb-Request-Analytics-Tags": "graphservice","Priority": "u=0","Accept-Encoding": "gzip, deflate","X-Fb-Http-Engine": "Liger","X-Fb-Client-Ip": "True","X-Fb-Server-Cluster": "True","X-Fb-Connection-Token": "ef0e330bff1cd312f36aa5f2c69c59a9","Content-Type": "application/x-www-form-urlencoded","Content-Length": "567"}
+        url = "https://graph.facebook.com/graphql"
+        sxrresps = requests.post(url, headers=_header, data=_data).json()
+        try:respx = sxrresps["data"]["user"]["friends"]["edges"]
+        except:pass
+        if len(respx) < 10:pass
+        else:
+            for xdge in respx:
+                try:ndex = xdge["node"]
+                except:pass
+                open(sv_dpfl, "a", encoding="utf-8").write(ndex["id"] + "|" + ndex["name"] + "\n")
+            try:totl_act=len(open(sv_dpfl,"r").readlines())
+            except:totl_act="?"
+            clor = random.choice(colors)
+            print(f"\r {clor}SUCESSFULLY EXTRACTED {uid}")
+            extrt.append(uid)
+            sys.stdout.write(f"\r {a}[{b}Mr.SxR{a}] ~ [{f}{len(total)} {b}●{a} {str(len(extrt))}{a}] ~ [{f}{totl_act}{a}]");sys.stdout.flush()
+    except KeyError:pass
+    except requests.exceptions.ConnectionError:time.sleep(6)
+#▬▭▬▭▬▭▬▭[ BINARY CLEANER ]▬▭▬▭▬▭▬▭#
+def clean_file(file_path):
+    try:
+        fresh_lines = []
+        with open(file_path, "rb") as file:lines = file.readlines()       
+        for line in lines:
+            try:
+                line.decode("utf-8")
+                fresh_lines.append(line.decode("utf-8"))
+            except UnicodeDecodeError:continue
+        with open(file_path, "w", encoding="utf-8") as file:file.writelines(fresh_lines)
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ DUPLICATE REMOVE ]▬▭▬▭▬▭▬▭#
+def duplicte_rmv():
+    try:
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")
+        clean_file(file_path)
+        with open(file_path, "r", encoding="utf8") as file:
+            lines = file.readlines()
+        unq_lns = list(set(line.strip() for line in lines))
+        srt_lns = sorted(unq_lns, reverse=True)
+        with open(file_path, "w", encoding="utf8") as file:
+            for line in srt_lns:
+                file.write(line+"\n")
+        input(f"\n{b} [{c}●{b}] DUPLICATE REMOVE DONE");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ STYLIST REMOVE ]▬▭▬▭▬▭▬▭#
+def stylist_rmv():
+    try:
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")
+        clean_file(file_path)
+        #spcl_regex = re.compile(r'[#@#%&*\-+()!"\':;/\\?.,<>{}_~`$^\[\]=]')@#%&*-+()!"':;/\?.,<>{}_~`$^=[]
+        spcl_regex = re.compile(r'[#@#%&*+()!":;/\\?,<>{}_~`$^\[\]=]')
+        eng_regex = re.compile(r'^[\x00-\x7F]+$')
+        tmp_pth = file_path+".tmp"
+        with open(file_path, "r", encoding="utf-8") as infile, open(tmp_pth, "w", encoding="utf-8") as outfile:
+            vld_lns = []
+            for line in infile:
+                if not spcl_regex.search(line) and eng_regex.match(line.strip()):
+                    vld_lns.append(line.strip())
+            srt_lns = sorted(vld_lns, reverse=True)
+            for line in srt_lns:
+                outfile.write(line+"\n")
+        os.replace(tmp_pth, file_path)
+        input(f"\n{b} [{c}●{b}] STYLIST NAMES ACCOUNT REMOVE DONE");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ USE ID REMOVE ]▬▭▬▭▬▭▬▭#
+def line_rmv():
+    try:
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")
+        clean_file(file_path)
+        lns_numbr = int(input(f"{b} [{c}●{b}] YOU WANT TO REMOVE THE FIRST FEW IDS {ekl} "))
+        with open(file_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+        rmning_lns = lines[lns_numbr:]
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.writelines(rmning_lns)
+        input(f"\n{b} [{c}●{b}] SICCESSFULLY REMOVE FIRST {lns_numbr} IDS");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ SEPARATE IDS ]▬▭▬▭▬▭▬▭#
+def saprt_ids():
+    try:
+        open(".MrSxR_SPrT.txt", "w").close()
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")  # Input main file path
+        clean_file(file_path)
+        output_file = input(f"{b} [{c}●{b}] ENTER THE NAME OF THE OUTPUT FILE {ekl} ")  # Input output file name
+        try:lnks = int(input(f"{b} [{c}●{b}] HOW MANY LINKS SHOULD BE KEPT {ekl} "))
+        except:lnks = 1
+        lnksx_lmt = []
+        print(f"\n{b} [{c}●{b}] EXAMPLE {ekl} 6155, 6156, 100092 EtC..")
+        for lnksx in range(lnks):
+            lnksx_lmt.append(input(f"{b} [{c}●{b}] {a}PUT LINK {lnksx + 1} {ekl}{b} "))
+        with open(file_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+        with open(".MrSxR_SPrT.txt", "a", encoding="utf-8") as out_file:
+            mxmng_lins = []
+            for line in lines:
+                if any(uid_lnks in line for uid_lnks in lnksx_lmt):
+                    out_file.write(line)
+                else:
+                    mxmng_lins.append(line)
+        with open(file_path, "w", encoding="utf-8") as main_file:
+            main_file.writelines(mxmng_lins)
+        with open(".MrSxR_SPrT.txt", "r", encoding="utf-8") as sorted_file:
+            unique_lines = sorted(set(sorted_file.readlines()), reverse=True)
+        with open(output_file, "w", encoding="utf-8") as final_file:
+            final_file.writelines(unique_lines)
+        input(f"\n{b} [{c}●{b}] YOUR SELECTED IDS ARE SAVED IN THE '{output_file}' FILE AND REMOVED FROM THE MAIN FILE.");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ SEPARATE NAME ]▬▭▬▭▬▭▬▭#
+def saprt_nam():
+    try:
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")
+        clean_file(file_path)
+        output_file = input(f"{b} [{c}●{b}] ENTER THE NAME OF THE OUTPUT FILE {ekl} ")
+        try:kyds_nm = int(input(f"\n{b} [{c}●{b}] ENTER NUMBER OF NAMES {ekl} "))
+        except:kyds_nm = 1
+        keywords = []
+        for i in range(kyds_nm):
+            keyword = input(f"{b} [{c}●{b}] {a}ENTER NAME {i+1} {ekl}{b} ").strip().lower()
+            keywords.append(keyword)
+        with open(file_path, "r", encoding="utf-8") as f:lines = f.readlines()
+        flter_nms = []
+        rmnig_lns = []
+        for line in lines:
+            if any(keyword in line.lower() for keyword in keywords):
+                flter_nms.append(line.strip())
+            else:rmnig_lns.append(line.strip())
+        with open(output_file, "w", encoding="utf-8") as f:f.write("\n".join(flter_nms))
+        with open(file_path, "w", encoding="utf-8") as f:f.write("\n".join(rmnig_lns))
+        input(f"\n{b} [{c}●{b}] YOUR SELECTED NAME IDS ARE SAVED IN THE '{output_file}' FILE AND REMOVED FROM THE MAIN FILE.");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ FILE DIVIDER ]▬▭▬▭▬▭▬▭#
+def divider():
+    try:
+        clr_logo(stts=False)
+        file_path = input(f"{b} [{c}●{b}] INPUT YOUR PATH {ekl} ")
+        clean_file(file_path)
+        with open(file_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
+        prtsx = int(input(f"\n{b} [{c}●{b}] HOW MANY PARTS TO DIVIDE THE FILE {ekl} "))
+        if prtsx <= 1:
+            exit(f"\n {c}PARTS MUST BE MORE THAN 1.")
+        ttal_lns = len(lines)
+        lns_prpts = ttal_lns // prtsx
+        for i in range(prtsx):
+            fst = i * lns_prpts
+            xnd = fst + lns_prpts if i < prtsx - 1 else ttal_lns
+            output_file = input(f"{b} [{c}●{b}] OUTPUT FILE NAME {i+1} {ekl} ")
+            if os.path.exists(output_file):
+                print(f"{b} [{c}●{b}] '{output_file}' EXISTS. CHOOSE ANOTHER NAME.")
+                continue
+            with open(output_file, "w", encoding="utf-8") as file:
+                file.writelines(lines[fst:xnd])
+        input(f"\n{b} [{c}●{b}] FILE DIVIDED SUCCESSFULLY");sxr_main()
+    except FileNotFoundError:exit(f"\n {c}THE FILE '{file_path}' WAS NOT FOUND.")
+    except Exception as e:exit(f"\n {c}Error {ekl} {e}")
+#▬▭▬▭▬▭▬▭[ REMOVE TOKEN ]▬▭▬▭▬▭▬▭#
+def ckki_rmv():
+    try:os.remove(".MrSxR_TkN.txt")
+    except:pass
+    sxr_main()
+#▬▭▬▭▬▭▬▭[ THE END ]▬▭▬▭▬▭▬▭#
+sxr_main()
