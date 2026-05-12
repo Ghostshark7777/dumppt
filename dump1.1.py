@@ -176,18 +176,101 @@ def validate_token_v2(token):
     except:
         return False
 # In login_id_ps() function, after the first request:
-if "access_token" in sxr_respns:
-    token = sxr_respns["access_token"]
-    # Add token validation
-    if token and len(token) > 20:
-        print(f"\n{b} [{c}●{b}] TOKEN {ekl} " + token)
-        open(".MrSxR_TkN.txt","w").write(token)
-        input("\n LOGIN DONE PRESS ENTER");sxr_main()
-    else:
-        print(f"\n {c}INVALID TOKEN RECEIVED...");time.sleep(3);login_menu()
-Add better error handling for expired tokens in the status checker:
+import requests
+import time
+import json
+from requests.exceptions import RequestException
 
-python
+def validate_token(token, headers=None):
+    """
+    Validate token by making a test API call to check if it's active/expired
+    Replace 'YOUR_STATUS_ENDPOINT' with actual status check endpoint
+    """
+    try:
+        # Example status check endpoint - replace with actual API endpoint
+        status_url = "https://api.example.com/status"  # UPDATE THIS
+        
+        test_headers = headers or {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(status_url, headers=test_headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return True, "Token is valid"
+        elif response.status_code == 401:
+            return False, "Token expired or invalid"
+        else:
+            return False, f"API error: {response.status_code}"
+            
+    except RequestException as e:
+        return False, f"Network error: {str(e)}"
+    except json.JSONDecodeError:
+        return False, "Invalid JSON response"
+    except Exception as e:
+        return False, f"Validation error: {str(e)}"
+
+def handle_login_response(sxr_respns, headers=None):
+    """Enhanced login response handler with token validation"""
+    
+    if "access_token" not in sxr_respns:
+        print(f"\n❌ No access_token in response")
+        print(f"Response keys: {list(sxr_respns.keys())}")
+        time.sleep(2)
+        return False
+    
+    token = sxr_respns["access_token"]
+    
+    # Basic token checks
+    if not token or not isinstance(token, str) or len(token) < 20:
+        print(f"\n❌ Invalid token format (length: {len(token) if token else 0})")
+        time.sleep(2)
+        return False
+    
+    print(f"\n🔍 Validating token...")
+    
+    # Validate token with API call
+    is_valid, message = validate_token(token, headers)
+    
+    if is_valid:
+        print(f"\n✅ {b}[{c}✓{b}] TOKEN VALID {ekl}" + token[:20] + "...")
+        try:
+            with open(".MrSxR_TkN.txt", "w") as f:
+                f.write(token)
+            print(f"\n💾 Token saved to .MrSxR_TkN.txt")
+            input("\n🎉 LOGIN SUCCESSFUL - PRESS ENTER TO CONTINUE")
+            sxr_main()
+            return True
+        except IOError as e:
+            print(f"\n❌ Failed to save token: {e}")
+            return False
+    else:
+        print(f"\n❌ TOKEN ISSUE: {message}")
+        print("\n🔄 Retrying login...")
+        time.sleep(3)
+        return False
+
+# Replace your original code with this call:
+# if handle_login_response(sxr_respns):
+#     # Success - continue
+# else:
+#     login_menu()
+
+# FULL REPLACEMENT for your original block:
+def improved_login_handler(sxr_respns, headers=None):
+    """Drop-in replacement for your original code"""
+    if handle_login_response(sxr_respns, headers):
+        return True
+    else:
+        print(f"\n🔄 Returning to login menu...")
+        time.sleep(2)
+        login_menu()
+        return False
+
+# Usage (replace your original if-block):
+# improved_login_handler(sxr_respns, your_headers_dict)
 #▬▭▬▭▬▭▬▭[ STATUS CHECKER ]▬▭▬▭▬▭▬▭#
 def ck_sttus():
     try:
