@@ -78,19 +78,103 @@ def login_tkkn():
     except:
         pass
 #▬▭▬▭▬▭▬▭[ LOGIN TOKEN ]▬▭▬▭▬▭▬▭#
+import requests
+import json
+import time
+import re
+
 def login_tkkn():
     try:
-        token = input(f"{b} [{c}●{b}] TOKEN {ekl} ")
-        if not (token.startswith("EAA") or token.startswith("EAAB") or token.startswith("EAAG")):
-            print(f"\n {c}INVALID TOKEN FORMAT...");time.sleep(3);login_menu()
-        else:
-            open(".MrSxR_TkN.txt", "w").write(token);sxr_main()
-    except Exception as e:print(f"Error : {e}...");time.sleep(3);login_menu()
-Additionally, here are some other improvements to help with the "expired token" issues:
+        token = input(f"{b} [{c}●{b}] TOKEN {ekl} ").strip()
+        
+        # Enhanced token format validation
+        if not re.match(r'^(EAA[A-Za-z0-9]{1,})\.', token):
+            print(f"\n {c}[!] INVALID TOKEN FORMAT (Must start with EAA/EAAB/EAAG)...")
+            time.sleep(2)
+            login_menu()
+        
+        # Test token validity before saving
+        if not validate_token(token):
+            print(f"\n {c}[!] TOKEN IS INVALID OR EXPIRED...")
+            time.sleep(2)
+            login_menu()
+        
+        # Save valid token
+        with open(".MrSxR_TkN.txt", "w") as f:
+            f.write(token.strip())
+        print(f"\n {lg}[✓] TOKEN SAVED SUCCESSFULLY!")
+        time.sleep(1)
+        sxr_main()
+        
+    except KeyboardInterrupt:
+        print(f"\n\n {r}[!] Login cancelled by user...")
+        time.sleep(1)
+        login_menu()
+    except Exception as e:
+        print(f"\n {r}[!] Login Error: {str(e)}")
+        time.sleep(2)
+        login_menu()
 
-Fix the login response handling - The token might be nested differently in the response:
+def validate_token(token):
+    """Validate Facebook token by making a test API call"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Authorization': f'Bearer {token}'
+        }
+        
+        # Test endpoints (use multiple for better validation)
+        test_urls = [
+            f"https://graph.facebook.com/me?access_token={token}",
+            f"https://graph.facebook.com/v18.0/me/accounts?access_token={token}"
+        ]
+        
+        for url in test_urls:
+            try:
+                response = requests.get(url, headers={'User-Agent': headers['User-Agent']}, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Check for common error responses
+                    if 'error' not in data:
+                        return True
+                    elif data.get('error', {}).get('code') == 190:  # Token expired/invalid
+                        return False
+                elif response.status_code == 401:
+                    return False
+            except:
+                continue
+        
+        return False
+        
+    except:
+        return False
 
-python
+# Alternative: Even more robust token validation
+def validate_token_v2(token):
+    """More comprehensive token validation with multiple checks"""
+    try:
+        # Quick regex check first
+        if not re.match(r'^[EAA]{3}[A-Za-z0-9]+(\.[A-Za-z0-9]+)?$', token):
+            return False
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Accept': '*/*',
+            'Connection': 'keep-alive'
+        }
+        
+        # Test Graph API
+        url = f"https://graph.facebook.com/me?fields=id,name&access_token={token}"
+        response = requests.get(url, headers=headers, timeout=8)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return 'error' not in data and data.get('id')
+        
+        return False
+        
+    except:
+        return False
 # In login_id_ps() function, after the first request:
 if "access_token" in sxr_respns:
     token = sxr_respns["access_token"]
