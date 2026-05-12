@@ -62,14 +62,21 @@ def uaua():
     return f"{dblifb}{ua}"
 ua = uaua()
 #▬▭▬▭▬▭▬▭[ STATUS CHECKER ]▬▭▬▭▬▭▬▭#
-
-Facebook Token Login Fix
-pls fix when logging in email/uid, cookie and token expired appear even if the account is active
-Looking at your code, the issue is in the login_tkkn() function where you have an incorrect validation check for the token format. The condition is checking if the token starts with both "EAAG" AND "EAAB" simultaneously, which is logically impossible. Also, the validation is inverted - it's rejecting valid tokens instead of invalid ones.
-
-Here's the fix for the login_tkkn() function:
-
-python
+def login_tkkn():
+    token = entry_token.get().strip()
+    
+    # Fix: Check if token starts with EITHER valid prefix
+    if not (token.startswith("EAAG") or token.startswith("EAAB")):
+        messagebox.showerror("Error", "Invalid token format! Must start with EAAG... or EAAB...")
+        return False
+    
+    # Rest of your validation logic...
+    try:
+        # Your API call here
+        response = requests.get(f"https://graph.facebook.com/me?access_token={token}")
+        # etc.
+    except:
+        pass
 #▬▭▬▭▬▭▬▭[ LOGIN TOKEN ]▬▭▬▭▬▭▬▭#
 def login_tkkn():
     try:
